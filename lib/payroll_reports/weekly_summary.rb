@@ -32,35 +32,54 @@ module PayrollReports
       Date.parse(@week_ending).strftime('SM%Y%m%d')
     end
     
-    def content
-      employee_ids = DB[:hours_detail].distinct(:employee_id,:employee_classification,:last_name,:first_name).where(:payroll_id => @payroll[:id]).order_by(:employee_classification,:last_name,:first_name)
-      
-      employee_ids.each do |id|
-        employee = DB[:employees].where(:id => id[:employee_id]).first
-
-        move_down 5
-        stroke_color '999999'
-        stroke_horizontal_rule
-        stroke_color '000000'
-        move_down 3
-
-        float do
-          text "#{employee[:payroll_file_number]}"
+    def footer
+      super
+      footer_height = 1.in
+      repeat :all do
+        bounding_box([bounds.left+1.in, bounds.bottom-footer_height], :width => 3.in, :height => bounds.bottom-footer_height) do
+          stroke_color '0000ff'
+#          text_box "lots of crap...", :at => [bounds.bottom, bounds.left], :width => 3.25.in, :height => 1.in, :valign => :bottom
+#          stroke_bounds
         end
-        float do
-          indent 50 do
-            text "#{employee[:last_name]}, #{employee[:first_name]}"
-          end
-        end
-        indent 300 do
-          rates = DB[:hours_detail].distinct(:rate_id,:rate_classification,:rate_name,:rate_short_code).where(:payroll_id => @payroll[:id], :employee_id => employee[:id]).order_by(:rate_classification,:rate_short_code)
-          rates.each do |rate|
-            quantity = DB[:hours_detail].where(:payroll_id => @payroll[:id], :employee_id => employee[:id], :rate_id => rate[:rate_id]).sum(:quantity)
-            text "#{rate[:rate_classification]} - #{rate[:rate_name]}: #{sprintf '%.2f', quantity}"
-          end
-        end
-        
       end
+
+    end
+    
+    def content
+      
+      table_data = []
+
+      results = DB.fetch( "SELECT employee_id,employee_classification,last_name,first_name,employee_code,rate_short_code,rate_classification,rate_name,SUM(quantity) AS quantity FROM hours_detail WHERE payroll_id = ? GROUP BY employee_classification,last_name,first_name,employee_code,rate_short_code,rate_classification,rate_name,employee_id,rate_id ORDER BY employee_classification,last_name,first_name,rate_short_code,rate_id", @payroll[:id] )
+
+      previous_employee_id = nil
+
+      results.each do |row|
+        new_row = []
+        
+        if previous_employee_id != row[:employee_id]
+          table_data << []
+          new_row << {:content => "#{row[:employee_code]}", :borders => [:top]}
+          new_row << {:content => "#{row[:last_name]}, #{row[:first_name]}", :borders => [:top]}
+          new_row << {:content => "#{row[:rate_classification]} - #{row[:rate_name]}", :borders => [:top]}
+          new_row << {:content => sprintf('%.2f', row[:quantity]), :borders => [:top]}
+        else
+          new_row << {:content => "", :colspan => 2, :borders => []}
+          new_row << {:content => "#{row[:rate_classification]} - #{row[:rate_name]}", :borders => []}
+          new_row << {:content => sprintf('%.2f', row[:quantity]), :borders => []}
+        end
+        table_data << new_row
+        previous_employee_id = row[:employee_id]
+      end
+      
+      table( table_data,
+        :width => bounds.width,
+        :column_widths => { 0 => 65 },
+        :cell_style => {
+          :padding => 1,
+          :border_colors => '999999'
+        },
+      )
+      
       
       120.times do
         text 'fuck this shit'

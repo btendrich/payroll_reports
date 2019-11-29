@@ -3,7 +3,7 @@ module PayrollReports
     include Prawn::View
 
     def initialize
-      font "/Library/Fonts/Arial.ttf"
+      font "/Library/Fonts/Arial.ttf", :size => 10
 
       header
       content
@@ -44,8 +44,8 @@ module PayrollReports
         )
       end
 
-      stroke_horizontal_rule
       move_cursor_to bounds.top-header_height
+      stroke_horizontal_rule
     end
 
     def document
@@ -89,9 +89,8 @@ module PayrollReports
         stroke_color "000000"
       end
         
-      number_pages "Generated: #{Time.now.strftime '%Y-%M-%d %H:%M:%S'}\nOrigin: #{self.class}", { :start_count_at => 0, :page_filter => :all, :at => [0+1.25.in, 0-0.1.in], :align => :left, :size => 10 }
-#      number_pages "", { :start_count_at => 0, :page_filter => :all, :at => [0+1.25.in, 0-0.2.in], :align => :left, :size => 12 }
-      number_pages "Page <page> of <total>", { :start_count_at => 0, :page_filter => :all, :at => [bounds.right - 100, 0-0.1.in], :align => :right, :size => 10 }
+#      number_pages "\nOrigin: #{self.class}", { :start_count_at => 0, :page_filter => :all, :at => [0+1.25.in, 0-0.1.in], :align => :left, :size => 10 }
+      number_pages "Page <page> of <total>\nGenerated: #{Time.now.strftime '%Y-%M-%d %H:%M:%S'}", { :start_count_at => 0, :page_filter => :all, :at => [bounds.right-3.in, bounds.bottom-0.65.in], :align => :right, :size => 10 }
 
       # insert qr code
       if qr_code
