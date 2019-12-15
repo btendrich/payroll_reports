@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+require "bundler/setup"
+require "payroll_reports"
+require "logger"
+
+# You can add fixtures and/or initialization code here to make experimenting
+# with your gem easier. You can also use a different console, if you like.
+
+# (If you use this, don't forget to add pry to your Gemfile!)
+# require "pry"
+# Pry.start
+
+#PRINT = true
+PRINT = nil
+
+$logger = Logger.new(STDERR)
+$logger.info "Starting up..."
+
+DB = Sequel.connect('postgres://btendrich:bigbee@10.102.130.20/payroll')
+$logger.info "Connected to database..."
+FileUtils.mkdir "reports" unless File.directory? "reports"
+
+
+IO.popen("./read") do |blender|
+  previous_read = Time.now - 5
+  blender.each do |line|
+    line.chop!
+    args = line.match /^READ:((\d+)-(\d+)-(\d+))$/
+    if args
+      $logger.debug "Read: '#{line}'"
+      
+      if Time.now - previous_read < 5
+        $logger.info "5 second timeout... Ignoring new read."
+        next
+      end
+      previous_read = Time.now
+      
+      results = DB.fetch("SELECT id FROM employees WHERE card_number = '#{args[1]}'")
+      if results.count == 1
+        employee_id = results.first[:id]
+        $logger.info "Employee ID #{employee_id} found for card number #{args[1]}"
+
+        output_filename = "reports/#{Time.now.strftime '%Y-%m-%d_%H%M%S.pdf'}"
+
+        thing = PayrollReports::IndividualDetail.new(employee_id: employee_id)
+        thing.save_as output_filename
+        %x( lp #{output_filename} ) if PRINT
+      elsif results.count == 0
+        $logger.info "No employee record for card number #{args[1]}"
+        %x(echo "No employee associated with card number '#{args[1]}'" | lp) if PRINT
+      else
+        $logger.error "Multiple employees returned with card number #{args[1]}"
+        %x(echo "Multiple employee records for card number '#{args[1]}'" | lp) if PRINT
+      end
+    else
+      $logger.error "Reader error: '#{line}'"
+    end
+  end
+end
