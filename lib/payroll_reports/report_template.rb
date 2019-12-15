@@ -1,5 +1,3 @@
-Money.locale_backend = nil
-
 module PayrollReports
   class ReportTemplate
     include Prawn::View

@@ -1,10 +1,10 @@
+require 'dotenv/load'
 require "prawn"
 require 'prawn/measurement_extensions'
 require 'prawn/table'
 require 'rqrcode'
 require 'tempfile'
 require 'sequel'
-require 'money'
 
 require "payroll_reports/version"
 require "payroll_reports/report_template"
