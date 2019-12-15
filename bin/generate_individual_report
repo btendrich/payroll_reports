@@ -15,7 +15,6 @@ require "payroll_reports"
 #thing = PayrollReports::IndividualDetail.new(employee_id: 64, payroll_id: 2427)
 #thing = PayrollReports::IndividualDetail.new(employee_id: 223)
 #thing = PayrollReports::IndividualDetail.new(employee_id: 1)
-#thing = PayrollReports::IndividualDetail.new(employee_id: 65)
-thing = PayrollReports::IndividualDetail.new(employee_id: 3)
+thing = PayrollReports::IndividualDetail.new(employee_id: 235)
 
 thing.save_as 'output.pdf'

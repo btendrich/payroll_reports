@@ -4,10 +4,12 @@ require 'prawn/table'
 require 'rqrcode'
 require 'tempfile'
 require 'sequel'
+require 'money'
 
 require "payroll_reports/version"
 require "payroll_reports/report_template"
 require "payroll_reports/weekly_summary"
+require "payroll_reports/individual_detail"
 
 DB = Sequel.connect(ENV['SEQUEL_URI'])
 

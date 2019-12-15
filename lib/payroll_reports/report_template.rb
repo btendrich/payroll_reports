@@ -1,3 +1,5 @@
+Money.locale_backend = nil
+
 module PayrollReports
   class ReportTemplate
     include Prawn::View
@@ -26,22 +28,26 @@ module PayrollReports
         text title, :align => :center, :size => 18
         text heading, :align => :center, :size => 14
         
-        table_data = []
         
-        headers.each do |key,value|
-          table_data << [
-            {:content => key.empty? ? '' : key + ":", :size => 10, :align => :right},
-            {:content => value, :size => 10, :align => :left}
-          ]
+        if headers.nil?
+          table_data = []
+          headers.each do |key,value|
+            table_data << [
+              {:content => key.empty? ? '' : key + ":", :size => 10, :align => :right},
+              {:content => value, :size => 10, :align => :left}
+            ]
+          end
+          
+          table(
+            table_data, 
+            :cell_style => {
+              :padding => 1,
+              :borders => []
+            }
+          )
+          
         end
         
-        table(
-          table_data, 
-          :cell_style => {
-            :padding => 1,
-            :borders => []
-          }
-        )
       end
 
       move_cursor_to bounds.top-header_height
@@ -60,10 +66,14 @@ module PayrollReports
       "<default heading>"
     end
     
-    def generate_qr_code(string, mode: :alphanumeric, size: 86)
-      qrcode = RQRCode::QRCode.new(string, :size => 1, :level => :h, :mode => mode)
+    def generate_qr_code(string, mode: :alphanumeric, size: 1)
+      begin
+        qrcode = RQRCode::QRCode.new(string, :size => size, :level => :h, :mode => mode)
+      rescue RQRCodeCore::QRCodeRunTimeError
+        qrcode = RQRCode::QRCode.new(string)
+      end
       png = qrcode.as_png(
-                resize_exactly_to: size,
+                resize_exactly_to: 86,
                 fill: 'white',
                 color: 'black',
                 border_modules: 0,
@@ -76,6 +86,10 @@ module PayrollReports
       return output
     end
     
+    def headers
+      nil
+    end
+    
     def content
     end
     
@@ -85,7 +99,7 @@ module PayrollReports
       page_count.times do |i|
         go_to_page i
         stroke_color "ff0000"
-        stroke_bounds
+#        stroke_bounds
         stroke_color "000000"
       end
         
@@ -94,7 +108,11 @@ module PayrollReports
 
       # insert qr code
       if qr_code
-        qr_code_file = generate_qr_code( qr_code )
+        begin
+          qr_code_file = generate_qr_code( qr_code )
+        rescue RQRCodeCore::QRCodeArgumentError
+          qr_code_file = generate_qr_code( qr_code, mode: :byte_8bit)
+        end
         repeat :all do
          # footer
            image qr_code_file.path, :at => [bounds.left+0.05.in, bounds.bottom-0.05.in], :fit => [0.9.in, 0.9.in]
@@ -105,6 +123,10 @@ module PayrollReports
     def save_as(filename)
       footer
       super
+    end
+    
+    def display_as_currency(money)
+      sprintf('%.2f', money)
     end
 
   end
