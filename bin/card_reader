@@ -16,7 +16,8 @@ PRINT = nil
 $logger = Logger.new(STDERR)
 $logger.info "Starting up..."
 
-DB = Sequel.connect('postgres://btendrich:bigbee@10.102.130.20/payroll')
+DB = Sequel.connect(ENV['SEQUEL_URI']) unless DB
+
 $logger.info "Connected to database..."
 FileUtils.mkdir "reports" unless File.directory? "reports"
 
